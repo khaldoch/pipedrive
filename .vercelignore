@@ -1,0 +1,44 @@
+# Ignore root-level Go files
+main.go
+*.go
+
+# Ignore binaries
+pipcal-server
+index
+
+# Ignore logs
+*.log
+server.log
+
+# Ignore environment files
+.env
+.env.*
+
+# Ignore build artifacts
+*.test
+*.out
+
+# Ignore IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Ignore OS files
+.DS_Store
+.DS_Store?
+._*
+Thumbs.db
+
+# Ignore documentation (optional, remove if you want to host docs)
+*.md
+!README.md
+
+# Ignore git
+.git/
+.gitignore
+
+# Ignore node modules if any
+node_modules/
+
+# Only include api/ directory

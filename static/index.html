@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PipCal Webhook Server - Test Page</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+            color: white;
+            padding: 40px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            font-weight: 700;
+        }
+
+        .header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        .content {
+            padding: 40px;
+        }
+
+        .status {
+            background: #f0f9ff;
+            border: 2px solid #0ea5e9;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 30px;
+            text-align: center;
+        }
+
+        .status h3 {
+            color: #0369a1;
+            margin-bottom: 10px;
+        }
+
+        .status p {
+            color: #0c4a6e;
+        }
+
+        .test-section {
+            margin-bottom: 30px;
+        }
+
+        .test-section h3 {
+            color: #374151;
+            margin-bottom: 20px;
+            font-size: 1.3rem;
+        }
+
+        .test-buttons {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+        }
+
+        .test-btn {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            color: white;
+            border: none;
+            padding: 15px 20px;
+            border-radius: 10px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);
+        }
+
+        .test-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(16, 185, 129, 0.4);
+        }
+
+        .test-btn:active {
+            transform: translateY(0);
+        }
+
+        .test-btn.hangup {
+            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+            box-shadow: 0 4px 15px rgba(245, 158, 11, 0.3);
+        }
+
+        .test-btn.hangup:hover {
+            box-shadow: 0 8px 25px rgba(245, 158, 11, 0.4);
+        }
+
+        .test-btn.optout {
+            background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+            box-shadow: 0 4px 15px rgba(239, 68, 68, 0.3);
+        }
+
+        .test-btn.optout:hover {
+            box-shadow: 0 8px 25px rgba(239, 68, 68, 0.4);
+        }
+
+        .test-btn.appointment {
+            background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+            box-shadow: 0 4px 15px rgba(139, 92, 246, 0.3);
+        }
+
+        .test-btn.appointment:hover {
+            box-shadow: 0 8px 25px rgba(139, 92, 246, 0.4);
+        }
+
+        .result {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9rem;
+            white-space: pre-wrap;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .result.success {
+            background: #f0fdf4;
+            border: 1px solid #22c55e;
+            color: #166534;
+        }
+
+        .result.error {
+            background: #fef2f2;
+            border: 1px solid #ef4444;
+            color: #dc2626;
+        }
+
+        .endpoints {
+            background: #f8fafc;
+            border-radius: 12px;
+            padding: 20px;
+            margin-top: 30px;
+        }
+
+        .endpoints h3 {
+            color: #374151;
+            margin-bottom: 15px;
+        }
+
+        .endpoint {
+            background: white;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            padding: 10px 15px;
+            margin-bottom: 10px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9rem;
+        }
+
+        .endpoint.method {
+            color: #059669;
+            font-weight: bold;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            margin-top: 20px;
+        }
+
+        .spinner {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #4f46e5;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🚀 PipCal Webhook Server</h1>
+            <p>Test your Pipedrive + Retell AI + Cal.com integration</p>
+        </div>
+
+        <div class="content">
+            <div class="status">
+                <h3>✅ Server Status</h3>
+                <p>Webhook server is running and ready to process test data!</p>
+            </div>
+
+            <div class="test-section">
+                <h3>📞 Retell AI Test Calls</h3>
+                <div class="test-buttons">
+                    <button class="test-btn" onclick="testCall('completed')">
+                        ✅ Test Completed Call
+                    </button>
+                    <button class="test-btn hangup" onclick="testCall('hangup')">
+                        📞 Test Hangup Call
+                    </button>
+                    <button class="test-btn optout" onclick="testCall('optout')">
+                        🚫 Test Opt-out Call
+                    </button>
+                </div>
+            </div>
+
+            <div class="test-section">
+                <h3>📅 Cal.com Test Appointments</h3>
+                <div class="test-buttons">
+                    <button class="test-btn appointment" onclick="testAppointment()">
+                        📅 Test Appointment Booking
+                    </button>
+                </div>
+            </div>
+
+            <div class="loading" id="loading">
+                <div class="spinner"></div>
+                <p>Processing test data...</p>
+            </div>
+
+            <div id="result"></div>
+
+            <div class="endpoints">
+                <h3>🔗 Available Endpoints</h3>
+                <div class="endpoint">
+                    <span class="method">GET</span> /health - Health check
+                </div>
+                <div class="endpoint">
+                    <span class="method">POST</span> /webhook/retell - Retell AI webhook
+                </div>
+                <div class="endpoint">
+                    <span class="method">POST</span> /webhook/cal - Cal.com webhook
+                </div>
+                <div class="endpoint">
+                    <span class="method">POST</span> /test/completed - Test completed call
+                </div>
+                <div class="endpoint">
+                    <span class="method">POST</span> /test/hangup - Test hangup call
+                </div>
+                <div class="endpoint">
+                    <span class="method">POST</span> /test/optout - Test opt-out call
+                </div>
+                <div class="endpoint">
+                    <span class="method">POST</span> /test/appointment - Test appointment
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        async function testCall(type) {
+            showLoading();
+            try {
+                const response = await fetch(`/test/${type}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    }
+                });
+
+                const result = await response.json();
+                showResult(result, response.ok);
+            } catch (error) {
+                showResult({ error: error.message }, false);
+            }
+            hideLoading();
+        }
+
+        async function testAppointment() {
+            showLoading();
+            try {
+                const response = await fetch('/test/appointment', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    }
+                });
+
+                const result = await response.json();
+                showResult(result, response.ok);
+            } catch (error) {
+                showResult({ error: error.message }, false);
+            }
+            hideLoading();
+        }
+
+        function showLoading() {
+            document.getElementById('loading').style.display = 'block';
+            document.getElementById('result').innerHTML = '';
+        }
+
+        function hideLoading() {
+            document.getElementById('loading').style.display = 'none';
+        }
+
+        function showResult(result, success) {
+            const resultDiv = document.getElementById('result');
+            resultDiv.className = `result ${success ? 'success' : 'error'}`;
+            resultDiv.textContent = JSON.stringify(result, null, 2);
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,15 @@
+{
+  "name": "pipcal-webhooks",
+  "version": "2.0.0",
+  "description": "PipCal Webhook Server for Pipedrive, Retell AI, and Cal.com integration",
+  "scripts": {
+    "deploy": "vercel --prod",
+    "dev": "vercel dev"
+  },
+  "devDependencies": {
+    "vercel": "^32.0.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

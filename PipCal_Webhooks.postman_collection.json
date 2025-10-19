@@ -1,0 +1,248 @@
+{
+	"info": {
+		"_postman_id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+		"name": "PipCal Webhooks - Retell AI & Cal.com Integration",
+		"description": "Complete collection for testing PipCal webhook endpoints with real Retell AI and Cal.com integrations that create activities in Pipedrive CRM",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "12345678"
+	},
+	"item": [
+		{
+			"name": "Health Check",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{base_url}}/health",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"health"
+					]
+				},
+				"description": "Check if the server is running and healthy"
+			},
+			"response": []
+		},
+		{
+			"name": "Retell AI - Call Completed",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					},
+					{
+						"key": "User-Agent",
+						"value": "Retell-AI-Webhook/1.0"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"call_id\": \"retell-1234\",\n  \"contact_phone\": \"+12025550123\",\n  \"transcript\": \"Hello, this is John calling about the product demo. I'm interested in learning more about your services. The pricing looks reasonable and I'd like to schedule a follow-up meeting.\",\n  \"duration\": \"00:05:00\",\n  \"status\": \"completed\",\n  \"timestamp\": \"2025-10-13T14:23:00Z\",\n  \"event\": \"call.completed\"\n}"
+				},
+				"url": {
+					"raw": "{{base_url}}/webhook/retell",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"webhook",
+						"retell"
+					]
+				},
+				"description": "Simulates a completed call from Retell AI - creates activity and transcript note in Pipedrive"
+			},
+			"response": []
+		},
+		{
+			"name": "Retell AI - Customer Opt Out",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					},
+					{
+						"key": "User-Agent",
+						"value": "Retell-AI-Webhook/1.0"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"call_id\": \"retell-5678\",\n  \"contact_phone\": \"+12025550456\",\n  \"transcript\": \"Hi, I'm not interested in your services. Please remove me from your calling list. I don't want to receive any more calls.\",\n  \"duration\": \"00:02:00\",\n  \"status\": \"optout\",\n  \"timestamp\": \"2025-10-13T16:45:00Z\",\n  \"event\": \"call.optout\"\n}"
+				},
+				"url": {
+					"raw": "{{base_url}}/webhook/retell",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"webhook",
+						"retell"
+					]
+				},
+				"description": "Simulates customer opt-out - marks contact as DNC in Pipedrive"
+			},
+			"response": []
+		},
+		{
+			"name": "Retell AI - Customer Hang Up",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					},
+					{
+						"key": "User-Agent",
+						"value": "Retell-AI-Webhook/1.0"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"call_id\": \"retell-9012\",\n  \"contact_phone\": \"+12025550789\",\n  \"transcript\": \"Hello, I'm calling about the proposal you sent. I have a few questions about the implementation timeline.\",\n  \"duration\": \"00:03:00\",\n  \"status\": \"hangup\",\n  \"timestamp\": \"2025-10-13T10:15:00Z\",\n  \"event\": \"call.hangup\"\n}"
+				},
+				"url": {
+					"raw": "{{base_url}}/webhook/retell",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"webhook",
+						"retell"
+					]
+				},
+				"description": "Simulates customer hang up - creates hangup activity in Pipedrive"
+			},
+			"response": []
+		},
+		{
+			"name": "Cal.com - Appointment Booked",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					},
+					{
+						"key": "User-Agent",
+						"value": "Cal.com-Webhook/1.0"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"contact\": {\n    \"name\": \"Alice Brown\",\n    \"email\": \"alice.brown@example.com\",\n    \"phone\": \"+1-555-0321\"\n  },\n  \"start_time\": \"2025-10-20T09:00:00Z\",\n  \"end_time\": \"2025-10-20T10:00:00Z\",\n  \"meeting_url\": \"https://cal.com/meeting/abc123\"\n}"
+				},
+				"url": {
+					"raw": "{{base_url}}/webhook/cal",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"webhook",
+						"cal"
+					]
+				},
+				"description": "Simulates appointment booking from Cal.com - creates meeting activity in Pipedrive"
+			},
+			"response": []
+		},
+		{
+			"name": "Cal.com - Follow-up Meeting",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					},
+					{
+						"key": "User-Agent",
+						"value": "Cal.com-Webhook/1.0"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"contact\": {\n    \"name\": \"Charlie Wilson\",\n    \"email\": \"charlie.wilson@example.com\",\n    \"phone\": \"+1-555-0654\"\n  },\n  \"start_time\": \"2025-10-25T14:30:00Z\",\n  \"end_time\": \"2025-10-25T15:30:00Z\",\n  \"meeting_url\": \"https://cal.com/meeting/xyz789\"\n}"
+				},
+				"url": {
+					"raw": "{{base_url}}/webhook/cal",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"webhook",
+						"cal"
+					]
+				},
+				"description": "Simulates follow-up meeting booking - creates meeting activity in Pipedrive"
+			},
+			"response": []
+		},
+		{
+			"name": "Cal.com - Demo Meeting",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					},
+					{
+						"key": "User-Agent",
+						"value": "Cal.com-Webhook/1.0"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"contact\": {\n    \"name\": \"Diana Prince\",\n    \"email\": \"diana.prince@example.com\",\n    \"phone\": \"+1-555-0987\"\n  },\n  \"start_time\": \"2025-10-30T11:00:00Z\",\n  \"end_time\": \"2025-10-30T12:00:00Z\",\n  \"meeting_url\": \"https://cal.com/meeting/demo456\"\n}"
+				},
+				"url": {
+					"raw": "{{base_url}}/webhook/cal",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"webhook",
+						"cal"
+					]
+				},
+				"description": "Simulates product demo meeting booking - creates meeting activity in Pipedrive"
+			},
+			"response": []
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "base_url",
+			"value": "http://localhost:8080",
+			"type": "string"
+		}
+	]
+}
