@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"log"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -56,10 +57,13 @@ func RetellWebhookHandler(pipedriveService *PipedriveService) gin.HandlerFunc {
 // RetellCallAnalyzedHandler handles Retell AI call_analyzed webhook requests
 func RetellCallAnalyzedHandler(pipedriveService *PipedriveService) gin.HandlerFunc {
 	return func(c *gin.Context) {
+		log.Printf("🔔 [WEBHOOK] Received Retell call_analyzed webhook")
+
 		var payload RetellCallAnalyzedPayload
 
 		// Bind JSON payload
 		if err := c.ShouldBindJSON(&payload); err != nil {
+			log.Printf("❌ [WEBHOOK ERROR] Invalid JSON payload: %v", err)
 			c.JSON(http.StatusBadRequest, WebhookResponse{
 				Success: false,
 				Message: "Invalid JSON payload",
@@ -67,8 +71,16 @@ func RetellCallAnalyzedHandler(pipedriveService *PipedriveService) gin.HandlerFu
 			return
 		}
 
+		log.Printf("📦 [WEBHOOK] Received call_analyzed for Call ID: %s", payload.Call.CallID)
+		log.Printf("📦 [WEBHOOK] Event type: %s", payload.Event)
+		log.Printf("📦 [WEBHOOK] Agent: %s", payload.Call.AgentName)
+		log.Printf("📦 [WEBHOOK] Duration: %d ms", payload.Call.DurationMs)
+		log.Printf("📦 [WEBHOOK] Status: %s", payload.Call.CallStatus)
+		log.Printf("📦 [WEBHOOK] Transcript length: %d chars", len(payload.Call.Transcript))
+
 		// Validate required fields
 		if payload.Call.CallID == "" {
+			log.Printf("❌ [WEBHOOK ERROR] Missing call_id in payload")
 			c.JSON(http.StatusBadRequest, WebhookResponse{
 				Success: false,
 				Message: "Missing required field: call.call_id",
@@ -76,14 +88,19 @@ func RetellCallAnalyzedHandler(pipedriveService *PipedriveService) gin.HandlerFu
 			return
 		}
 
+		log.Printf("🔄 [WEBHOOK] Processing call_analyzed webhook...")
+
 		// Process the call analyzed
 		if err := pipedriveService.ProcessRetellCallAnalyzed(payload); err != nil {
+			log.Printf("❌ [WEBHOOK ERROR] Failed to process: %v", err)
 			c.JSON(http.StatusInternalServerError, WebhookResponse{
 				Success: false,
 				Message: "Failed to process call analyzed: " + err.Error(),
 			})
 			return
 		}
+
+		log.Printf("✅ [WEBHOOK] Successfully processed call_analyzed webhook for Call ID: %s", payload.Call.CallID)
 
 		// Return success response
 		c.JSON(http.StatusOK, WebhookResponse{
@@ -137,10 +154,10 @@ func PipedriveLeadWebhookHandler(pipedriveService *PipedriveService) gin.Handler
 			Success: true,
 			Message: "Pipedrive lead webhook processed successfully",
 			Data: gin.H{
-				"lead_id":    payload.Data.ID,
-				"person_id":  payload.Data.PersonID,
-				"title":      payload.Data.Title,
-				"action":     payload.Meta.Action,
+				"lead_id":   payload.Data.ID,
+				"person_id": payload.Data.PersonID,
+				"title":     payload.Data.Title,
+				"action":    payload.Meta.Action,
 			},
 		})
 	}
