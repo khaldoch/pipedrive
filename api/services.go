@@ -17,11 +17,12 @@ import (
 
 // CallMapping stores call information for later use
 type CallMapping struct {
-	PersonName string
+	PersonName  string
+	PersonEmail string
 	PhoneNumber string
-	LeadTitle  string
-	PersonID   int
-	Timestamp  time.Time
+	LeadTitle   string
+	PersonID    int
+	Timestamp   time.Time
 }
 
 // PipedriveService handles real Pipedrive API interactions
@@ -40,15 +41,15 @@ type PipedrivePhone struct {
 
 // PipedrivePerson represents a person from Pipedrive API
 type PipedrivePerson struct {
-	ID    int             `json:"id"`
-	Name  string          `json:"name"`
+	ID    int              `json:"id"`
+	Name  string           `json:"name"`
 	Email []PipedrivePhone `json:"email"`
 	Phone []PipedrivePhone `json:"phone"`
 }
 
 // PipedrivePersonResponse represents the response from Pipedrive persons API
 type PipedrivePersonResponse struct {
-	Success bool            `json:"success"`
+	Success bool             `json:"success"`
 	Data    *PipedrivePerson `json:"data"`
 }
 
@@ -61,11 +62,11 @@ type PipedrivePersonSearchResponse struct {
 
 // PipedriveLead represents a lead from Pipedrive API
 type PipedriveLead struct {
-	ID        string `json:"id"`
-	Title     string `json:"title"`
-	PersonID  int    `json:"person_id"`
-	OwnerID   int    `json:"owner_id"`
-	AddTime   string `json:"add_time"`
+	ID         string `json:"id"`
+	Title      string `json:"title"`
+	PersonID   int    `json:"person_id"`
+	OwnerID    int    `json:"owner_id"`
+	AddTime    string `json:"add_time"`
 	UpdateTime string `json:"update_time"`
 }
 
@@ -78,19 +79,19 @@ type PipedriveLeadSearchResponse struct {
 
 // PipedriveActivity represents an activity in Pipedrive
 type PipedriveActivity struct {
-	ID          int    `json:"id"`
-	Subject     string `json:"subject"`
-	Type        string `json:"type"`
-	DueDate     string `json:"due_date"`
-	PersonID    int    `json:"person_id"`
-	Note        string `json:"note"`
-	Duration    string `json:"duration"`
-	MeetingURL  string `json:"meeting_url,omitempty"`
+	ID         int    `json:"id"`
+	Subject    string `json:"subject"`
+	Type       string `json:"type"`
+	DueDate    string `json:"due_date"`
+	PersonID   int    `json:"person_id"`
+	Note       string `json:"note"`
+	Duration   string `json:"duration"`
+	MeetingURL string `json:"meeting_url,omitempty"`
 }
 
 // PipedriveActivityResponse represents the response from Pipedrive activities API
 type PipedriveActivityResponse struct {
-	Success bool              `json:"success"`
+	Success bool               `json:"success"`
 	Data    *PipedriveActivity `json:"data"`
 }
 
@@ -111,7 +112,7 @@ func (p *PipedriveService) makePipedriveRequest(method, endpoint string, body in
 		separator = "&"
 	}
 	url := p.config.PipedriveBaseURL + endpoint + separator + "api_token=" + p.config.PipedriveAPIKey
-	
+
 	var reqBody io.Reader
 	if body != nil {
 		jsonData, err := json.Marshal(body)
@@ -121,26 +122,26 @@ func (p *PipedriveService) makePipedriveRequest(method, endpoint string, body in
 		reqBody = bytes.NewBuffer(jsonData)
 		log.Printf("📤 Request Body: %s", string(jsonData))
 	}
-	
+
 	req, err := http.NewRequest(method, url, reqBody)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create request: %v", err)
 	}
-	
+
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Accept", "application/json")
-	
+
 	log.Printf("🌐 Making %s request to Pipedrive: %s", method, endpoint)
 	log.Printf("🔗 Full URL: %s", url)
-	
+
 	resp, err := p.httpClient.Do(req)
 	if err != nil {
 		return nil, fmt.Errorf("failed to make request: %v", err)
 	}
-	
+
 	// Log the response
 	log.Printf("📥 Pipedrive Response Status: %d", resp.StatusCode)
-	
+
 	// Read and log response body
 	bodyBytes, err := io.ReadAll(resp.Body)
 	if err != nil {
@@ -148,10 +149,10 @@ func (p *PipedriveService) makePipedriveRequest(method, endpoint string, body in
 	} else {
 		log.Printf("📥 Pipedrive Response Body: %s", string(bodyBytes))
 	}
-	
+
 	// Create a new response with the body for further processing
 	resp.Body = io.NopCloser(bytes.NewBuffer(bodyBytes))
-	
+
 	return resp, nil
 }
 
@@ -160,7 +161,7 @@ func (p *PipedriveService) FindOrCreateContact(contactData ContactPayload) (*Con
 	if p.config.HasPipedriveConfig() {
 		// REAL PIPEDRIVE INTEGRATION
 		log.Printf("🔍 [REAL PIPEDRIVE API] Searching for contact: %s (%s)", contactData.Name, contactData.Email)
-		
+
 		// 1. Search for existing contact by email
 		searchEndpoint := fmt.Sprintf("/persons/search?term=%s&fields=email", contactData.Email)
 		resp, err := p.makePipedriveRequest("GET", searchEndpoint, nil)
@@ -168,12 +169,12 @@ func (p *PipedriveService) FindOrCreateContact(contactData ContactPayload) (*Con
 			return nil, fmt.Errorf("failed to search contact: %v", err)
 		}
 		defer resp.Body.Close()
-		
+
 		var searchResult PipedrivePersonSearchResponse
 		if err := json.NewDecoder(resp.Body).Decode(&searchResult); err != nil {
 			return nil, fmt.Errorf("failed to decode search response: %v", err)
 		}
-		
+
 		// If contact found, return it
 		if searchResult.Success && len(searchResult.Items) > 0 {
 			person := searchResult.Items[0]
@@ -194,7 +195,7 @@ func (p *PipedriveService) FindOrCreateContact(contactData ContactPayload) (*Con
 				DNC:   false,
 			}, nil
 		}
-		
+
 		// 2. Create new contact if not found
 		log.Printf("📝 Creating new contact in Pipedrive: %s", contactData.Name)
 		createData := map[string]interface{}{
@@ -202,22 +203,22 @@ func (p *PipedriveService) FindOrCreateContact(contactData ContactPayload) (*Con
 			"email": contactData.Email,
 			"phone": contactData.Phone,
 		}
-		
+
 		resp, err = p.makePipedriveRequest("POST", "/persons", createData)
 		if err != nil {
 			return nil, fmt.Errorf("failed to create contact: %v", err)
 		}
 		defer resp.Body.Close()
-		
+
 		var createResult PipedrivePersonResponse
 		if err := json.NewDecoder(resp.Body).Decode(&createResult); err != nil {
 			return nil, fmt.Errorf("failed to decode create response: %v", err)
 		}
-		
+
 		if !createResult.Success || createResult.Data == nil {
 			return nil, fmt.Errorf("failed to create contact in Pipedrive")
 		}
-		
+
 		person := createResult.Data
 		phone := ""
 		email := ""
@@ -235,13 +236,13 @@ func (p *PipedriveService) FindOrCreateContact(contactData ContactPayload) (*Con
 			Phone: phone,
 			DNC:   false,
 		}, nil
-		
+
 	} else {
 		log.Printf("🔍 [SIMULATION MODE] Processing webhook request for contact: %s (%s)", contactData.Name, contactData.Email)
 		log.Printf("   ⚠️  This is a SIMULATION SERVER - not real Retell AI or Pipedrive")
 		log.Printf("   📡 You sent a POST request to /webhook/retell")
 		log.Printf("   🎭 Server is simulating what would happen with real Retell AI + Pipedrive")
-		
+
 		// Simulate contact lookup/creation
 		contact := &Contact{
 			ID:    uuid.New().String(),
@@ -250,7 +251,7 @@ func (p *PipedriveService) FindOrCreateContact(contactData ContactPayload) (*Con
 			Phone: contactData.Phone,
 			DNC:   false,
 		}
-		
+
 		log.Printf("✅ Contact found/created: ID=%s, Name=%s", contact.ID, contact.Name)
 		return contact, nil
 	}
@@ -261,73 +262,73 @@ func (p *PipedriveService) LogActivity(contactID string, activity Activity) erro
 	if p.config.HasPipedriveConfig() {
 		// REAL PIPEDRIVE INTEGRATION
 		log.Printf("📝 [REAL PIPEDRIVE API] Logging activity for contact %s:", contactID)
-		
+
 		// Convert contactID to int for Pipedrive API
 		personID, err := strconv.Atoi(contactID)
 		if err != nil {
 			return fmt.Errorf("invalid contact ID: %v", err)
 		}
-		
+
 		// Prepare activity data for Pipedrive
 		activityData := map[string]interface{}{
-			"subject":    activity.Description,
-			"type":       activity.Type,
-			"due_date":   activity.DateTime.Format("2006-01-02 15:04:05"),
-			"person_id":  personID,
-			"note":       activity.Transcript,
+			"subject":   activity.Description,
+			"type":      activity.Type,
+			"due_date":  activity.DateTime.Format("2006-01-02 15:04:05"),
+			"person_id": personID,
+			"note":      activity.Transcript,
 		}
-		
+
 		// Add duration if available
 		if activity.Duration > 0 {
 			activityData["duration"] = activity.Duration
 		}
-		
+
 		// Add meeting URL if available
 		if activity.MeetingURL != "" {
 			activityData["meeting_url"] = activity.MeetingURL
 		}
-		
+
 		// Create activity in Pipedrive
 		resp, err := p.makePipedriveRequest("POST", "/activities", activityData)
 		if err != nil {
 			return fmt.Errorf("failed to create activity: %v", err)
 		}
 		defer resp.Body.Close()
-		
+
 		var activityResult PipedriveActivityResponse
 		if err := json.NewDecoder(resp.Body).Decode(&activityResult); err != nil {
 			return fmt.Errorf("failed to decode activity response: %v", err)
 		}
-		
+
 		if !activityResult.Success || activityResult.Data == nil {
 			return fmt.Errorf("failed to create activity in Pipedrive")
 		}
-		
+
 		log.Printf("✅ Created activity in Pipedrive: ID=%d, Type=%s", activityResult.Data.ID, activity.Type)
-		
+
 	} else {
 		log.Printf("📝 [SIMULATION MODE] Simulating activity logging for contact %s:", contactID)
 		log.Printf("   ⚠️  This is a SIMULATION SERVER - not real Retell AI or Pipedrive")
 		log.Printf("   📡 You sent a POST request to /webhook/retell")
 		log.Printf("   🎭 Server is simulating what would happen with real Retell AI + Pipedrive")
 	}
-	
+
 	log.Printf("   Type: %s", activity.Type)
 	log.Printf("   Description: %s", activity.Description)
 	log.Printf("   DateTime: %s", activity.DateTime.Format(time.RFC3339))
-	
+
 	if activity.Duration > 0 {
 		log.Printf("   Duration: %d minutes", activity.Duration)
 	}
-	
+
 	if activity.MeetingURL != "" {
 		log.Printf("   Meeting URL: %s", activity.MeetingURL)
 	}
-	
+
 	if activity.Transcript != "" {
 		log.Printf("   Transcript: %s", activity.Transcript)
 	}
-	
+
 	return nil
 }
 
@@ -336,45 +337,45 @@ func (p *PipedriveService) MarkContactAsDNC(contactID string) error {
 	if p.config.HasPipedriveConfig() {
 		// REAL PIPEDRIVE INTEGRATION
 		log.Printf("🚫 [REAL PIPEDRIVE API] Marking contact %s as Do Not Call (DNC)", contactID)
-		
+
 		// Convert contactID to int for Pipedrive API
 		personID, err := strconv.Atoi(contactID)
 		if err != nil {
 			return fmt.Errorf("invalid contact ID: %v", err)
 		}
-		
+
 		// Update contact with DNC flag
 		updateData := map[string]interface{}{
 			"custom_fields": map[string]interface{}{
 				"do_not_call": true,
 			},
 		}
-		
+
 		endpoint := fmt.Sprintf("/persons/%d", personID)
 		resp, err := p.makePipedriveRequest("PUT", endpoint, updateData)
 		if err != nil {
 			return fmt.Errorf("failed to update contact: %v", err)
 		}
 		defer resp.Body.Close()
-		
+
 		var updateResult PipedrivePersonResponse
 		if err := json.NewDecoder(resp.Body).Decode(&updateResult); err != nil {
 			return fmt.Errorf("failed to decode update response: %v", err)
 		}
-		
+
 		if !updateResult.Success {
 			return fmt.Errorf("failed to mark contact as DNC in Pipedrive")
 		}
-		
+
 		log.Printf("✅ Marked contact %d as Do Not Call (DNC) in Pipedrive", personID)
-		
+
 	} else {
 		log.Printf("🚫 [SIMULATION MODE] Simulating DNC marking for contact %s", contactID)
 		log.Printf("   ⚠️  This is a SIMULATION SERVER - not real Retell AI or Pipedrive")
 		log.Printf("   📡 You sent a POST request to /webhook/retell")
 		log.Printf("   🎭 Server is simulating what would happen with real Retell AI + Pipedrive")
 	}
-	
+
 	return nil
 }
 
@@ -383,25 +384,25 @@ func (p *PipedriveService) ProcessRetellCall(payload RetellWebhookPayload) error
 	log.Printf("🔧 [DEBUG] ProcessRetellCall called with event: %s", payload.Event)
 	if p.config.HasPipedriveConfig() {
 		log.Printf("🚀 [REAL PIPEDRIVE] Processing Retell webhook: %s", payload.Event)
-		
+
 		// Parse timestamp
 		callTime, err := time.Parse(time.RFC3339, payload.Timestamp)
 		if err != nil {
 			return fmt.Errorf("invalid timestamp format: %v", err)
 		}
-		
+
 		// Find or create contact by phone
 		contact, err := p.FindOrCreateContactByPhone(payload.ContactPhone)
 		if err != nil {
 			return fmt.Errorf("failed to find/create contact: %v", err)
 		}
-		
+
 		// Convert contactID to int
 		personID, err := strconv.Atoi(contact.ID)
 		if err != nil {
 			return fmt.Errorf("invalid contact ID: %v", err)
 		}
-		
+
 		// Handle different event types
 		log.Printf("🔧 [DEBUG] Processing event: %s for personID: %d", payload.Event, personID)
 		switch payload.Event {
@@ -454,7 +455,7 @@ func (p *PipedriveService) ProcessRetellCall(payload RetellWebhookPayload) error
 			log.Printf("⚠️ Unknown event type: %s", payload.Event)
 			return nil
 		}
-		
+
 	} else {
 		// Simulation mode
 		log.Printf("🔍 [SIMULATION MODE] Processing Retell webhook: %s", payload.Event)
@@ -462,14 +463,14 @@ func (p *PipedriveService) ProcessRetellCall(payload RetellWebhookPayload) error
 		log.Printf("   Phone: %s", payload.ContactPhone)
 		log.Printf("   Duration: %s", payload.Duration)
 		log.Printf("   Status: %s", payload.Status)
-		
+
 		if payload.Transcript != "" {
 			log.Printf("   Transcript: %s", payload.Transcript)
 		}
-		
+
 		log.Printf("   ⚠️  This is a SIMULATION SERVER - not real Retell AI or Pipedrive")
 	}
-	
+
 	return nil
 }
 
@@ -481,7 +482,7 @@ func (p *PipedriveService) ProcessRetellCallAnalyzed(payload RetellCallAnalyzedP
 		// Convert timestamps to time.Time
 		startTime := time.Unix(payload.Call.StartTimestamp/1000, 0)
 		endTime := time.Unix(payload.Call.EndTimestamp/1000, 0)
-		
+
 		// Convert duration from milliseconds to HH:MM:SS format
 		durationSeconds := payload.Call.DurationMs / 1000
 		hours := durationSeconds / 3600
@@ -498,18 +499,18 @@ func (p *PipedriveService) ProcessRetellCallAnalyzed(payload RetellCallAnalyzedP
 			if err != nil {
 				return fmt.Errorf("failed to find/create contact: %v", err)
 			}
-			
+
 			// Convert contactID to int
 			personID, err := strconv.Atoi(contact.ID)
 			if err != nil {
 				return fmt.Errorf("invalid contact ID: %v", err)
 			}
-			
+
 			// Update person with call data in custom fields
 			if err := p.UpdatePersonWithCallData(personID, payload.Call.Transcript, duration, startTime.Format("2006-01-02")); err != nil {
 				log.Printf("⚠️ Warning: Failed to update person with call data: %v", err)
 			}
-			
+
 			// Create comprehensive call activity
 			activityData := map[string]interface{}{
 				"subject":   fmt.Sprintf("AI Call Analyzed - %s", payload.Call.AgentName),
@@ -521,19 +522,19 @@ func (p *PipedriveService) ProcessRetellCallAnalyzed(payload RetellCallAnalyzedP
 				"due_date":  startTime.Format("2006-01-02"),
 				"due_time":  startTime.Format("15:04:05"),
 			}
-			
+
 			resp, err := p.makePipedriveRequest("POST", "/activities", activityData)
 			if err != nil {
 				return fmt.Errorf("failed to create call activity: %v", err)
 			}
 			defer resp.Body.Close()
-			
+
 			log.Printf("✅ Created call analyzed activity for unknown contact")
 			return nil
 		}
-		
+
 		log.Printf("📝 Found call mapping: %s (%s) - %s", callMapping.PersonName, callMapping.PhoneNumber, callMapping.LeadTitle)
-		
+
 		// Use stored person ID
 		personID := callMapping.PersonID
 
@@ -697,32 +698,40 @@ func (p *PipedriveService) ProcessPipedriveLead(payload PipedriveLeadWebhookPayl
 			return nil
 		}
 
-		log.Printf("📞 Found phone number: %s for person: %s", phoneNumber, person.Name)
+		// Extract email address
+		personEmail := p.extractEmailFromPerson(person)
 
-		// Create Retell AI call with person name and lead title
-		callID, err := p.CreateRetellCall(phoneNumber, person.Name, payload.Data.Title)
+		log.Printf("📞 Found phone number: %s for person: %s", phoneNumber, person.Name)
+		if personEmail != "" {
+			log.Printf("📧 Found email: %s for person: %s", personEmail, person.Name)
+		} else {
+			log.Printf("⚠️ No email found for person: %s", person.Name)
+		}
+
+		// Create Retell AI call with person name, email and lead title
+		callID, err := p.CreateRetellCall(phoneNumber, person.Name, personEmail, payload.Data.Title)
 		if err != nil {
 			log.Printf("❌ Failed to create Retell AI call: %v", err)
 			// Don't return error, just log it and continue
 			callID = "failed-" + strconv.FormatInt(time.Now().Unix(), 10)
 		} else {
-			log.Printf("✅ Created Retell AI call %s for lead %s (person: %s, phone: %s)", 
+			log.Printf("✅ Created Retell AI call %s for lead %s (person: %s, phone: %s)",
 				callID, payload.Data.Title, person.Name, phoneNumber)
 		}
 
 		// Store the call mapping for later use in call_analyzed webhook
-		p.storeCallMapping(callID, person.Name, phoneNumber, payload.Data.Title, payload.Data.PersonID)
+		p.storeCallMapping(callID, person.Name, personEmail, phoneNumber, payload.Data.Title, payload.Data.PersonID)
 
 		// Create activity in Pipedrive to track the call
 		activityData := map[string]interface{}{
 			"subject":   fmt.Sprintf("AI Call Initiated - Lead: %s", payload.Data.Title),
 			"type":      "call",
 			"person_id": payload.Data.PersonID,
-			"note":      fmt.Sprintf("Retell AI call initiated for lead: %s\nCall ID: %s\nPhone: %s", 
+			"note": fmt.Sprintf("Retell AI call initiated for lead: %s\nCall ID: %s\nPhone: %s",
 				payload.Data.Title, callID, phoneNumber),
-			"done":      0, // Mark as pending
-			"due_date":  time.Now().Format("2006-01-02"),
-			"due_time":  time.Now().Add(5 * time.Minute).Format("15:04:05"),
+			"done":     0, // Mark as pending
+			"due_date": time.Now().Format("2006-01-02"),
+			"due_time": time.Now().Add(5 * time.Minute).Format("15:04:05"),
 		}
 
 		resp, err := p.makePipedriveRequest("POST", "/activities", activityData)
@@ -771,22 +780,23 @@ func (p *PipedriveService) GetPersonByID(personID int) (*PipedrivePerson, error)
 }
 
 // CreateRetellCall creates a call via Retell AI API
-func (p *PipedriveService) CreateRetellCall(phoneNumber, personName, leadTitle string) (string, error) {
+func (p *PipedriveService) CreateRetellCall(phoneNumber, personName, personEmail, leadTitle string) (string, error) {
 	// Check if we have valid Retell AI configuration
 	if p.config.RetellAPIKey == "" || p.config.RetellAssistantID == "" {
 		return "", fmt.Errorf("Retell AI not configured: missing API key or assistant ID")
 	}
 
-	log.Printf("🚀 Creating Retell AI call for %s (%s) - Lead: %s", personName, phoneNumber, leadTitle)
+	log.Printf("🚀 Creating Retell AI call for %s (%s, %s) - Lead: %s", personName, phoneNumber, personEmail, leadTitle)
 
 	callRequest := RetellCallRequest{
-		FromNumber:          p.config.RetellFromNumber,
-		ToNumber:            phoneNumber,
-		AssistantID:         p.config.RetellAssistantID,
-		MaxDurationSeconds:  300, // 5 minutes max
+		FromNumber:         p.config.RetellFromNumber,
+		ToNumber:           phoneNumber,
+		AssistantID:        p.config.RetellAssistantID,
+		MaxDurationSeconds: 300, // 5 minutes max
 		DynamicVariables: map[string]interface{}{
-			"person_name": personName,
-			"lead_title":  leadTitle,
+			"person_name":  personName,
+			"person_email": personEmail,
+			"lead_title":   leadTitle,
 		},
 	}
 
@@ -860,13 +870,13 @@ func min(a, b int) int {
 func (p *PipedriveService) extractPhoneFromPerson(person *PipedrivePerson) string {
 	if person.Phone != nil && len(person.Phone) > 0 {
 		phoneNumber := person.Phone[0].Value
-		
+
 		// Clean the phone number (remove spaces, dashes, parentheses)
 		phoneNumber = strings.ReplaceAll(phoneNumber, " ", "")
 		phoneNumber = strings.ReplaceAll(phoneNumber, "-", "")
 		phoneNumber = strings.ReplaceAll(phoneNumber, "(", "")
 		phoneNumber = strings.ReplaceAll(phoneNumber, ")", "")
-		
+
 		// Only add +1 if the number doesn't already have a country code
 		if !strings.HasPrefix(phoneNumber, "+") {
 			// If it doesn't start with +, add +1
@@ -875,8 +885,19 @@ func (p *PipedriveService) extractPhoneFromPerson(person *PipedrivePerson) strin
 			// If it starts with 1 but not +1, add the +
 			phoneNumber = "+" + phoneNumber
 		}
-		
+
 		return phoneNumber
+	}
+	return ""
+}
+
+// extractEmailFromPerson extracts email address from PipedrivePerson
+func (p *PipedriveService) extractEmailFromPerson(person *PipedrivePerson) string {
+	if person.Email != nil && len(person.Email) > 0 {
+		email := person.Email[0].Value
+		// Trim whitespace from email
+		email = strings.TrimSpace(email)
+		return email
 	}
 	return ""
 }
@@ -884,17 +905,17 @@ func (p *PipedriveService) extractPhoneFromPerson(person *PipedrivePerson) strin
 // handleCallStarted handles when a call begins
 func (p *PipedriveService) handleCallStarted(personID int, payload RetellWebhookPayload, callTime time.Time) error {
 	log.Printf("🔧 [DEBUG] Starting handleCallStarted for personID: %d", personID)
-	
+
 	// Create activity for call started
 	activityData := map[string]interface{}{
 		"subject":   "AI Call Started",
 		"type":      "call",
 		"person_id": personID,
-		"note":      fmt.Sprintf("Retell AI call started\nCall ID: %s\nPhone: %s\nStarted at: %s", 
+		"note": fmt.Sprintf("Retell AI call started\nCall ID: %s\nPhone: %s\nStarted at: %s",
 			payload.CallID, payload.ContactPhone, callTime.Format("2006-01-02 15:04:05")),
-		"done":      0, // Mark as pending
-		"due_date":  callTime.Format("2006-01-02"),
-		"due_time":  callTime.Format("15:04:05"),
+		"done":     0, // Mark as pending
+		"due_date": callTime.Format("2006-01-02"),
+		"due_time": callTime.Format("15:04:05"),
 	}
 
 	resp, err := p.makePipedriveRequest("POST", "/activities", activityData)
@@ -911,17 +932,17 @@ func (p *PipedriveService) handleCallStarted(personID int, payload RetellWebhook
 // handleCallEnded handles when a call ends (comprehensive end event)
 func (p *PipedriveService) handleCallEnded(personID int, payload RetellWebhookPayload, callTime time.Time) error {
 	log.Printf("🔧 [DEBUG] Starting handleCallEnded for personID: %d", personID)
-	
+
 	// Create activity for call ended
 	activityData := map[string]interface{}{
 		"subject":   "AI Call Ended",
 		"type":      "call",
 		"person_id": personID,
-		"note":      fmt.Sprintf("Retell AI call ended\nCall ID: %s\nPhone: %s\nDuration: %s\nStatus: %s\nEnded at: %s", 
+		"note": fmt.Sprintf("Retell AI call ended\nCall ID: %s\nPhone: %s\nDuration: %s\nStatus: %s\nEnded at: %s",
 			payload.CallID, payload.ContactPhone, payload.Duration, payload.Status, callTime.Format("2006-01-02 15:04:05")),
-		"done":      1, // Mark as completed
-		"due_date":  callTime.Format("2006-01-02"),
-		"due_time":  callTime.Format("15:04:05"),
+		"done":     1, // Mark as completed
+		"due_date": callTime.Format("2006-01-02"),
+		"due_time": callTime.Format("15:04:05"),
 	}
 
 	resp, err := p.makePipedriveRequest("POST", "/activities", activityData)
@@ -938,7 +959,7 @@ func (p *PipedriveService) handleCallEnded(personID int, payload RetellWebhookPa
 // handleCallCompleted handles completed calls
 func (p *PipedriveService) handleCallCompleted(personID int, payload RetellWebhookPayload, callTime time.Time) error {
 	log.Printf("🔧 [DEBUG] Starting handleCallCompleted for personID: %d", personID)
-	
+
 	// Update person with call data in custom fields
 	if err := p.UpdatePersonWithCallData(personID, payload.Transcript, payload.Duration, callTime.Format("2006-01-02")); err != nil {
 		log.Printf("⚠️ Warning: Failed to update person with call data: %v", err)
@@ -956,31 +977,31 @@ func (p *PipedriveService) handleCallCompleted(personID int, payload RetellWebho
 		"due_date":  callTime.Format("2006-01-02"),
 		"due_time":  callTime.Format("15:04:05"),
 	}
-	
+
 	log.Printf("🔧 [DEBUG] Activity data: %+v", activityData)
-	
+
 	resp, err := p.makePipedriveRequest("POST", "/activities", activityData)
 	if err != nil {
 		log.Printf("❌ [DEBUG] Error creating activity: %v", err)
 		return fmt.Errorf("failed to create call activity: %v", err)
 	}
 	defer resp.Body.Close()
-	
+
 	log.Printf("🔧 [DEBUG] Activity creation response status: %d", resp.StatusCode)
-	
+
 	var activityResult PipedriveActivityResponse
 	if err := json.NewDecoder(resp.Body).Decode(&activityResult); err != nil {
 		log.Printf("❌ [DEBUG] Error decoding activity response: %v", err)
 		return fmt.Errorf("failed to decode activity response: %v", err)
 	}
-	
+
 	log.Printf("🔧 [DEBUG] Activity result: %+v", activityResult)
-	
+
 	if !activityResult.Success {
 		log.Printf("❌ [DEBUG] Activity creation failed in Pipedrive")
 		return fmt.Errorf("failed to create call activity in Pipedrive")
 	}
-	
+
 	log.Printf("✅ Created call activity in Pipedrive: ID=%d", activityResult.Data.ID)
 
 	log.Printf("🔧 [DEBUG] handleCallCompleted completed successfully")
@@ -1004,22 +1025,22 @@ func (p *PipedriveService) handleCallHangup(personID int, payload RetellWebhookP
 		"due_date":  callTime.Format("2006-01-02"),
 		"due_time":  callTime.Format("15:04:05"),
 	}
-	
+
 	resp, err := p.makePipedriveRequest("POST", "/activities", hangupData)
 	if err != nil {
 		return fmt.Errorf("failed to create hangup activity: %v", err)
 	}
 	defer resp.Body.Close()
-	
+
 	var hangupResult PipedriveActivityResponse
 	if err := json.NewDecoder(resp.Body).Decode(&hangupResult); err != nil {
 		return fmt.Errorf("failed to decode hangup response: %v", err)
 	}
-	
+
 	if hangupResult.Success {
 		log.Printf("✅ Created hangup activity in Pipedrive: ID=%d", hangupResult.Data.ID)
 	}
-	
+
 	return nil
 }
 
@@ -1035,16 +1056,16 @@ func (p *PipedriveService) handleCallOptout(personID int, payload RetellWebhookP
 	updateData := map[string]interface{}{
 		"label": "Do Not Contact",
 	}
-	
+
 	endpoint := fmt.Sprintf("/persons/%d", personID)
 	resp, err := p.makePipedriveRequest("PUT", endpoint, updateData)
 	if err != nil {
 		return fmt.Errorf("failed to mark as DNC: %v", err)
 	}
 	defer resp.Body.Close()
-	
+
 	log.Printf("✅ Marked contact %d as Do Not Contact (DNC)", personID)
-	
+
 	// Also create an activity for the opt-out
 	optoutData := map[string]interface{}{
 		"subject":   "Customer Opted Out",
@@ -1055,13 +1076,13 @@ func (p *PipedriveService) handleCallOptout(personID int, payload RetellWebhookP
 		"due_date":  callTime.Format("2006-01-02"),
 		"due_time":  callTime.Format("15:04:05"),
 	}
-	
+
 	resp, err = p.makePipedriveRequest("POST", "/activities", optoutData)
 	if err != nil {
 		return fmt.Errorf("failed to create optout activity: %v", err)
 	}
 	defer resp.Body.Close()
-	
+
 	return nil
 }
 
@@ -1071,13 +1092,13 @@ func (p *PipedriveService) addTranscriptNote(personID int, transcript string) er
 		"content":   fmt.Sprintf("Transcript:\n%s", transcript),
 		"person_id": personID,
 	}
-	
+
 	resp, err := p.makePipedriveRequest("POST", "/notes", noteData)
 	if err != nil {
 		return fmt.Errorf("failed to create transcript note: %v", err)
 	}
 	defer resp.Body.Close()
-	
+
 	log.Printf("✅ Added transcript note for contact %d", personID)
 	return nil
 }
@@ -1086,7 +1107,7 @@ func (p *PipedriveService) addTranscriptNote(personID int, transcript string) er
 func (p *PipedriveService) FindOrCreateContactByPhone(phone string) (*Contact, error) {
 	if p.config.HasPipedriveConfig() {
 		log.Printf("🔍 [REAL PIPEDRIVE API] Searching for contact by phone: %s", phone)
-		
+
 		// Search for existing contact by phone
 		searchEndpoint := fmt.Sprintf("/persons/search?term=%s&fields=phone", phone)
 		resp, err := p.makePipedriveRequest("GET", searchEndpoint, nil)
@@ -1094,12 +1115,12 @@ func (p *PipedriveService) FindOrCreateContactByPhone(phone string) (*Contact, e
 			return nil, fmt.Errorf("failed to search contact: %v", err)
 		}
 		defer resp.Body.Close()
-		
+
 		var searchResult PipedrivePersonSearchResponse
 		if err := json.NewDecoder(resp.Body).Decode(&searchResult); err != nil {
 			return nil, fmt.Errorf("failed to decode search response: %v", err)
 		}
-		
+
 		// If contact found, return it
 		if searchResult.Success && len(searchResult.Items) > 0 {
 			person := searchResult.Items[0]
@@ -1120,29 +1141,29 @@ func (p *PipedriveService) FindOrCreateContactByPhone(phone string) (*Contact, e
 				DNC:   false,
 			}, nil
 		}
-		
+
 		// Create new contact if not found
 		log.Printf("📝 Creating new contact in Pipedrive for phone: %s", phone)
 		createData := map[string]interface{}{
 			"name":  "Unknown Caller",
 			"phone": []map[string]string{{"value": phone}},
 		}
-		
+
 		resp, err = p.makePipedriveRequest("POST", "/persons", createData)
 		if err != nil {
 			return nil, fmt.Errorf("failed to create contact: %v", err)
 		}
 		defer resp.Body.Close()
-		
+
 		var createResult PipedrivePersonResponse
 		if err := json.NewDecoder(resp.Body).Decode(&createResult); err != nil {
 			return nil, fmt.Errorf("failed to decode create response: %v", err)
 		}
-		
+
 		if !createResult.Success || createResult.Data == nil {
 			return nil, fmt.Errorf("failed to create contact in Pipedrive")
 		}
-		
+
 		person := createResult.Data
 		phone := ""
 		email := ""
@@ -1160,7 +1181,7 @@ func (p *PipedriveService) FindOrCreateContactByPhone(phone string) (*Contact, e
 			Phone: phone,
 			DNC:   false,
 		}, nil
-		
+
 	} else {
 		// Simulation mode
 		log.Printf("🔍 [SIMULATION MODE] Searching for contact by phone: %s", phone)
@@ -1171,7 +1192,7 @@ func (p *PipedriveService) FindOrCreateContactByPhone(phone string) (*Contact, e
 			Phone: phone,
 			DNC:   false,
 		}
-		
+
 		log.Printf("✅ Contact found/created: ID=%s, Phone=%s", contact.ID, contact.Phone)
 		return contact, nil
 	}
@@ -1339,9 +1360,9 @@ func (p *PipedriveService) ProcessCalAppointment(payload CalWebhookPayload) erro
 
 		// Calculate duration
 		duration := endTime.Sub(startTime)
-		durationStr := fmt.Sprintf("%02d:%02d:%02d", 
-			int(duration.Hours()), 
-			int(duration.Minutes())%60, 
+		durationStr := fmt.Sprintf("%02d:%02d:%02d",
+			int(duration.Hours()),
+			int(duration.Minutes())%60,
 			int(duration.Seconds())%60)
 
 		// Get the first attendee (main contact)
@@ -1362,7 +1383,7 @@ func (p *PipedriveService) ProcessCalAppointment(payload CalWebhookPayload) erro
 			// Lead found, use the existing person
 			personID = lead.PersonID
 			log.Printf("✅ [DEBUG] Found existing lead: ID=%s, Title=%s, PersonID=%d", lead.ID, lead.Title, lead.PersonID)
-			
+
 			// Get person details
 			person, err := p.FindOrCreateContactByEmail(attendee.Email, attendee.Name)
 			if err != nil {
@@ -1459,7 +1480,7 @@ func (p *PipedriveService) buildCalAppointmentNote(payload CalWebhookPayload, st
 	startTimeStr := startTime.Format("Monday, January 2, 2006 at 3:04 PM")
 	endTimeStr := endTime.Format("Monday, January 2, 2006 at 3:04 PM")
 	dateStr := startTime.Format("2006-01-02")
-	
+
 	// Create detailed note with all appointment information
 	note := fmt.Sprintf(`📅 Cal.com Appointment Scheduled
 
@@ -1504,7 +1525,7 @@ func (p *PipedriveService) buildCalAppointmentNote(payload CalWebhookPayload, st
 	note += fmt.Sprintf(`
 
 📊 Summary:
-This appointment was automatically created from Cal.com webhook. The meeting is scheduled for %s and will last %s.`, 
+This appointment was automatically created from Cal.com webhook. The meeting is scheduled for %s and will last %s.`,
 		startTimeStr, duration)
 
 	return note
@@ -1519,15 +1540,16 @@ func extractPhoneFromPerson(person *PipedrivePerson) string {
 }
 
 // storeCallMapping stores call information for later retrieval
-func (p *PipedriveService) storeCallMapping(callID, personName, phoneNumber, leadTitle string, personID int) {
+func (p *PipedriveService) storeCallMapping(callID, personName, personEmail, phoneNumber, leadTitle string, personID int) {
 	p.callMappings[callID] = CallMapping{
 		PersonName:  personName,
+		PersonEmail: personEmail,
 		PhoneNumber: phoneNumber,
 		LeadTitle:   leadTitle,
 		PersonID:    personID,
 		Timestamp:   time.Now(),
 	}
-	log.Printf("📝 Stored call mapping for %s: %s (%s)", callID, personName, phoneNumber)
+	log.Printf("📝 Stored call mapping for %s: %s (%s, %s)", callID, personName, personEmail, phoneNumber)
 }
 
 // getCallMapping retrieves call information by call ID
@@ -1558,7 +1580,7 @@ func (p *PipedriveService) buildCallAnalyzedNoteWithPerson(payload RetellCallAna
 📋 Call ID: %s
 
 📄 Full Transcript:
-%s`, 
+%s`,
 		personName,
 		phoneNumber,
 		leadTitle,
