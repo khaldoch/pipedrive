@@ -544,13 +544,13 @@ func (p *PipedriveService) ProcessRetellCallAnalyzed(payload RetellCallAnalyzedP
 			// Continue with activity creation even if person update fails
 		}
 
-		// Create comprehensive call activity with person name
+		// Create comprehensive call activity with person name and email
 		activityData := map[string]interface{}{
 			"subject":   fmt.Sprintf("AI Call Analyzed - %s", payload.Call.AgentName),
 			"type":      "call",
 			"person_id": personID,
 			"duration":  duration,
-			"note":      p.buildCallAnalyzedNoteWithPerson(payload, startTime, endTime, duration, callMapping.PersonName, callMapping.LeadTitle, callMapping.PhoneNumber),
+			"note":      p.buildCallAnalyzedNoteWithPerson(payload, startTime, endTime, duration, callMapping.PersonName, callMapping.PersonEmail, callMapping.LeadTitle, callMapping.PhoneNumber),
 			"done":      1,
 			"due_date":  startTime.Format("2006-01-02"),
 			"due_time":  startTime.Format("15:04:05"),
@@ -581,9 +581,15 @@ func (p *PipedriveService) ProcessRetellCallAnalyzed(payload RetellCallAnalyzedP
 
 		log.Printf("✅ Created call analyzed activity in Pipedrive: ID=%d", activityResult.Data.ID)
 
-		// Add transcript as a note
+		// Add transcript as a note with caller information
+		callerInfo := fmt.Sprintf("👤 Caller: %s\n📞 Phone: %s", callMapping.PersonName, callMapping.PhoneNumber)
+		if callMapping.PersonEmail != "" {
+			callerInfo += fmt.Sprintf("\n📧 Email: %s", callMapping.PersonEmail)
+		}
+		callerInfo += fmt.Sprintf("\n🎯 Lead: %s\n\n", callMapping.LeadTitle)
+
 		noteData := map[string]interface{}{
-			"content":   fmt.Sprintf("Call Analysis:\n\n%s\n\nFull Transcript:\n%s", payload.Call.CallAnalysis.CallSummary, payload.Call.Transcript),
+			"content":   fmt.Sprintf("%sCall Analysis:\n\n%s\n\nFull Transcript:\n%s", callerInfo, payload.Call.CallAnalysis.CallSummary, payload.Call.Transcript),
 			"person_id": personID,
 		}
 
@@ -1559,10 +1565,15 @@ func (p *PipedriveService) getCallMapping(callID string) (CallMapping, bool) {
 }
 
 // buildCallAnalyzedNoteWithPerson creates a comprehensive note for call analysis with person details
-func (p *PipedriveService) buildCallAnalyzedNoteWithPerson(payload RetellCallAnalyzedPayload, startTime, endTime time.Time, duration, personName, leadTitle, phoneNumber string) string {
+func (p *PipedriveService) buildCallAnalyzedNoteWithPerson(payload RetellCallAnalyzedPayload, startTime, endTime time.Time, duration, personName, personEmail, leadTitle, phoneNumber string) string {
+	emailInfo := ""
+	if personEmail != "" {
+		emailInfo = fmt.Sprintf("\n📧 Email: %s", personEmail)
+	}
+
 	return fmt.Sprintf(`🤖 AI Call Analysis Complete
 
-👤 Person: %s
+👤 Person: %s%s
 📞 Phone: %s
 🎯 Lead: %s
 📅 Date: %s
@@ -1582,6 +1593,7 @@ func (p *PipedriveService) buildCallAnalyzedNoteWithPerson(payload RetellCallAna
 📄 Full Transcript:
 %s`,
 		personName,
+		emailInfo,
 		phoneNumber,
 		leadTitle,
 		startTime.Format("2006-01-02"),
